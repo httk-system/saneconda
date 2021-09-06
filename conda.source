@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# Sane handling of the anaconda environments with the conda command.
+#
+# Setup:
+# 
+# 1. Install Anaconda without doing 'conda init' or adding anything to your .bashrc / .bash_profile
+# 2. Edit your .bashrc to contain the following::
+#  
+#      export ANACONDA_PATH=/opt/anaconda3
+#      alias conda="source ~/Scripts/conda.source"
+#       
+#    where you replace /opt/anaconda3 with the path where you have installed Anaconda, and 
+#    ~/Scripts/conda.source with the path of the present script.
+#
+#  3. Open a new terminal window or log out and log in again.
+#
+#  After this, running 'conda' works almost as normal, however, your Anaconda installation does not
+#  affect anything at in your system until you do a 'conda activate <environment>'. After doing that,
+#  the conda environment works as usual, until you do 'conda deactive', at which point you return to
+#  a system unaffected by your Anaconda installation.
+#
+# (c) Rickard Armiento, 2020-2021
+
+if [ -z "$ANACONDA_PATH" -o ! -e "$ANACONDA_PATH" ]; then
+    echo "conda: command not found" >&2
+    return
+fi
+
+# If we are in an active environment, just run the original conda command
+if [ -n "$CONDA_DEFAULT_ENV" -a "$CONDA_DEFAULT_ENV" != "base" ]; then
+  if type orig_conda >& /dev/null; then
+	  orig_conda "$@"
+	  return
+  fi
+fi
+
+if [ "$CONDA_DEFAULT_ENV" == "base" -a "$1" == "deactivate" ]; then
+  if type orig_conda >& /dev/null; then
+    orig_conda "$@"
+    unset -f orig_conda
+    return
+  fi
+fi
+
+function help_message() {
+    echo "This setup of Anaconda REQUIRES an active Anaconda environment before"
+    echo "commands such as 'conda install', 'conda update', etc."
+    echo ""
+    echo "To set up a customized Anaconda environment:"
+    echo ""
+    echo "  1. Create a new environement with, e.g., 'conda create -n myenv'."
+    echo "  2. Activate it with 'conda activate myenv'."
+    echo "  3. Run desired 'conda install ...' and 'conda update ...' commands to set up your environment."
+    echo ""
+    echo "If you get this message when trying to follow an external help document"
+    echo "that instructs you to run 'conda install' etc., just create a new environment"
+    echo "and activate it using the instructions above, and then continue onwards with"
+    echo "the instructions."
+    echo ""
+    echo "For more details about managing anaconda environments, see the following link:"
+    echo ""
+    echo "  https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html"
+    echo ""
+}
+
+if [ "$1" == "env" ]; then
+    COMMAND="$2"
+else
+    COMMAND="$1"
+fi
+
+if [ "$COMMAND" == "install" -o "$COMMAND" == "update" ]; then
+    ENVARG="FALSE"
+    for ARG in "$@"; do
+	if [ "$ARG" == "-n" -o "$ARG" == "--name" -o "$ARG" == "--prefix" -o "$ARG" == "-p" ]; then
+	    ENVARG="TRUE"
+	fi
+    done
+    if [ "$ENVARG" != "TRUE" ]; then
+	help_message
+	return
+    fi
+fi
+
+if [ "$1" == "init" ]; then
+    echo "You do not need to run 'conda init'. To use Anaconda, just"
+    echo "activate an anconda environment, e.g., 'conda activate myenv'"
+    echo "(where you must have created myenv using 'conda create -n myenv'"
+    echo "first)"
+    echo ""
+    return
+fi
+
+if [ "$1" == "activate" ]; then
+    unalias conda >& /dev/null
+    eval "$("$ANACONDA_PATH/bin/conda" shell.bash hook)"
+    eval orig_"$(declare -f conda)"
+    alias conda="source ~/Scripts/conda.source"
+    orig_conda "$@"
+    return
+else
+    (
+      unalias conda >& /dev/null
+      eval "$("$ANACONDA_PATH/bin/conda" shell.bash hook)"
+      conda "$@"
+    )
+    return
+fi
