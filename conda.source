@@ -27,6 +27,10 @@ if [ -z "$ANACONDA_PATH" -o ! -e "$ANACONDA_PATH" ]; then
     return
 fi
 
+if [ -z "$SANECONDA_PATH" ]; then
+    SANECONDA_PATH="${BASH_SOURCE[0]}"
+fi
+
 # If we are in an active environment, just run the original conda command
 if [ -n "$CONDA_DEFAULT_ENV" -a "$CONDA_DEFAULT_ENV" != "base" ]; then
   if type orig_conda >& /dev/null; then
@@ -96,7 +100,7 @@ if [ "$1" == "activate" ]; then
     unalias conda >& /dev/null
     eval "$("$ANACONDA_PATH/bin/conda" shell.bash hook)"
     eval orig_"$(declare -f conda)"
-    alias conda="source ~/Scripts/conda.source"
+    alias conda="source $SANECONDA_PATH"
     orig_conda "$@"
     return
 else
