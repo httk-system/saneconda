@@ -1,6 +1,8 @@
 #!/bin/bash
 #
-# Sane handling of anaconda/mambaforge environments with the conda/mamba commands.
+# Saner handling of anaconda/mambaforge environments with the conda/mamba commands.
+# Avoids Anaconda/Mambaforge affecting your environment until you have activated an
+# environment using the conda/mamba commands.
 #
 ## Setup for Anaconda:
 # 
@@ -57,23 +59,24 @@ fi
 
 # If we are in an active environment, just run the original conda/mamba command
 if [ -n "$CONDA_DEFAULT_ENV" -a "$CONDA_DEFAULT_ENV" != "base" ]; then
-  if type orig_${BINNAME} >& /dev/null; then          
-	  orig_${BINNAME} "$@"
+  if type "orig_${BINNAME}" >& /dev/null; then          
+	  "orig_${BINNAME}" "$@"
 	  return
   fi
 fi
 
 if [ "$CONDA_DEFAULT_ENV" == "base" -a "$1" == "deactivate" ]; then
-  if type orig_${BINNAME} >& /dev/null; then
-    orig_conda "$@"
-    unset -f orig_conda
+  if type "orig_${BINNAME}" >& /dev/null; then
+    "orig_${BINNAME}" "$@"
+    unset -f "orig_conda"
+    unset -f "orig_mamba"
     return
   fi
 fi
 
 function help_message() {
-    echo "This setup of Anaconda REQUIRES an active Anaconda environment before"
-    echo "commands such as 'conda install', 'conda update', etc."
+    echo "This setup of Anaconda deliberately does not affect your environment until"
+    echo "you have explicitly activated an anaconda environment."
     echo ""
     echo "To set up a customized Anaconda environment:"
     echo ""
@@ -112,26 +115,29 @@ if [ "$COMMAND" == "install" -o "$COMMAND" == "update" ]; then
 fi
 
 if [ "$1" == "init" ]; then
-    echo "You do not need to run 'conda init'. To use Anaconda, just"
-    echo "activate an anconda environment, e.g., 'conda activate myenv'"
-    echo "(where you must have created myenv using 'conda create -n myenv'"
-    echo "first)"
+    echo "You do not need to run '${BINNAME} init'. Just"
+    echo "activate an environment, e.g., '${BINNAME} activate myenv'"
+    echo "(where you must have created myenv using '${BINNAME} create -n myenv' first)"
     echo ""
     return
 fi
 
 if [ "$1" == "activate" ]; then
-    unalias conda >& /dev/null
-    eval "$("$ANACONDA_PATH/bin/conda" shell.bash hook)"
+    unset -f conda >& /dev/null
+    unset -f mamba >& /dev/null
+    eval "$("$FW_PATH/bin/conda" shell.bash hook)"
     eval orig_"$(declare -f conda)"
-    alias conda="source $SANECONDA_PATH"
-    orig_conda "$@"
+    eval orig_"$(declare -f mamba)"
+    function conda() { source "$SANECONDA_PATH" "$?" }
+    function mamba() { source "$SANECONDA_PATH" "$?" }
+    "orig_${BINNAME}" "$@"
     return
 else
     (
-      unalias conda >& /dev/null
-      eval "$("$ANACONDA_PATH/bin/conda" shell.bash hook)"
-      conda "$@"
+      unset -f conda >& /dev/null
+      unset -f mamba >& /dev/null
+      eval "$("$FW_PATH/bin/conda" shell.bash hook)"
+      "$BINNAME" "$@"
     )
     return
 fi
