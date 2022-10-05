@@ -1,29 +1,53 @@
 #!/bin/bash
 #
-# Sane handling of the anaconda environments with the conda command.
+# Sane handling of anaconda/mambaforge environments with the conda/mamba commands.
 #
-# Setup:
+## Setup for Anaconda:
 # 
-# 1. Install Anaconda without doing 'conda init' or adding anything to your .bashrc / .bash_profile
+# 1. Install Anaconda without doing 'conda init' or adding anything
+#     to your .bashrc / .bash_profile
 # 2. Edit your .bashrc to contain the following::
 #  
-#      export ANACONDA_PATH=/opt/anaconda3
-#      alias conda="source ~/Scripts/conda.source"
+#      export ANACONDA_PATH="/opt/anaconda3"
+#      function conda() { source "/home/example/Scripts/conda.source" "$@" }
 #       
 #    where you replace /opt/anaconda3 with the path where you have installed Anaconda, and 
-#    ~/Scripts/conda.source with the path of the present script.
+#    /home/example/Scripts/conda.source with the path of the present script.
 #
-#  3. Open a new terminal window or log out and log in again.
+# 3. Open a new terminal window or log out and log in again.
 #
-#  After this, running 'conda' works almost as normal, however, your Anaconda installation does not
-#  affect anything at in your system until you do a 'conda activate <environment>'. After doing that,
-#  the conda environment works as usual, until you do 'conda deactive', at which point you return to
-#  a system unaffected by your Anaconda installation.
+# After this, running 'conda' works almost as normal, however, your Anaconda installation does not
+# affect anything at in your system until you do a 'conda activate <environment>'. After doing that,
+# the conda environment works as usual, until you do 'conda deactive', at which point you return to
+# a system unaffected by your Anaconda installation.
 #
-# (c) Rickard Armiento, 2020-2021
+## Setup for Mambaforge  
+# 
+# Follow the steps above, but instead install Mambaforge from 
+#   https://github.com/conda-forge/miniforge/releases
+# and use the following in your init script::
+#
+#      export MAMBAFORGE_PATH="/opt/mambaforge"
+#      function conda() { source "/home/example/Scripts/conda.source" "$@" }
+#      function mamba() { source "/home/example/Scripts/conda.source" "$@" }
+# 
+# (c) Rickard Armiento, 2020-2022
 
-if [ -z "$ANACONDA_PATH" -o ! -e "$ANACONDA_PATH" ]; then
-    echo "conda: command not found" >&2
+BINNAME="${FUNCNAME[1]}"
+
+if [ "$BINNAME" != "conda" -a "$BINNAME" != "mamba" ]; then
+    echo "${BINNAME}: command not found" >&2
+    return
+fi
+
+if [ -n "$MAMBAFORGE_PATH" ]; then
+  FW_PATH="$MAMBAFORGE_PATH"
+else
+  FW_PATH="$ANACONDA_PATH"
+fi
+
+if [ -z "$FW_PATH" -o ! -e "$FW_PATH" ]; then
+    echo "${BINNAME}: command not found" >&2
     return
 fi
 
@@ -31,16 +55,16 @@ if [ -z "$SANECONDA_PATH" ]; then
     SANECONDA_PATH="${BASH_SOURCE[0]}"
 fi
 
-# If we are in an active environment, just run the original conda command
+# If we are in an active environment, just run the original conda/mamba command
 if [ -n "$CONDA_DEFAULT_ENV" -a "$CONDA_DEFAULT_ENV" != "base" ]; then
-  if type orig_conda >& /dev/null; then
-	  orig_conda "$@"
+  if type orig_${BINNAME} >& /dev/null; then          
+	  orig_${BINNAME} "$@"
 	  return
   fi
 fi
 
 if [ "$CONDA_DEFAULT_ENV" == "base" -a "$1" == "deactivate" ]; then
-  if type orig_conda >& /dev/null; then
+  if type orig_${BINNAME} >& /dev/null; then
     orig_conda "$@"
     unset -f orig_conda
     return
