@@ -115,21 +115,29 @@ if [ "$COMMAND" == "install" -o "$COMMAND" == "update" ]; then
 fi
 
 if [ "$1" == "init" ]; then
-    echo "You do not need to run '${BINNAME} init'. Just"
-    echo "activate an environment, e.g., '${BINNAME} activate myenv'"
+    echo "There is no need to run '${BINNAME} init'."
+    echo "Just activate an environment, e.g., '${BINNAME} activate myenv'"
     echo "(where you must have created myenv using '${BINNAME} create -n myenv' first)"
     echo ""
     return
 fi
 
 if [ "$1" == "activate" ]; then
-    unset -f conda >& /dev/null
-    unset -f mamba >& /dev/null
-    eval "$("$FW_PATH/bin/conda" shell.bash hook)"
-    eval orig_"$(declare -f conda)"
-    eval orig_"$(declare -f mamba)"
-    function conda() { source "$SANECONDA_PATH" "$?" }
-    function mamba() { source "$SANECONDA_PATH" "$?" }
+
+    if [ -e "$FW_PATH/bin/conda" ]; then
+	unset -f conda >& /dev/null
+	eval "$("$FW_PATH/bin/conda" shell.bash hook)"
+	eval orig_"$(declare -f conda)"
+	function conda() { source "$SANECONDA_PATH" "$@"; }
+    fi
+
+    if [ -e "$FW_PATH/etc/profile.d/mamba.sh" ]; then    
+	unset -f mamba >& /dev/null
+	source "$FW_PATH/etc/profile.d/mamba.sh"
+	eval orig_"$(declare -f mamba)"
+	function mamba() { source "$SANECONDA_PATH" "$@"; }
+    fi
+	
     "orig_${BINNAME}" "$@"
     return
 else
@@ -137,6 +145,7 @@ else
       unset -f conda >& /dev/null
       unset -f mamba >& /dev/null
       eval "$("$FW_PATH/bin/conda" shell.bash hook)"
+      source "$FW_PATH/etc/profile.d/mamba.sh"
       "$BINNAME" "$@"
     )
     return
