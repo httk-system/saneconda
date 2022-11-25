@@ -1,6 +1,6 @@
 # saneconda
 
-A saner handling of Anaconda environments with the conda command.
+A wrapper-script for the Anaconda "conda" command (and "mamba") for a saner handling of Anaconda environments.
 
 ## Setup
 
