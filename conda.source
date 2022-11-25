@@ -144,8 +144,12 @@ else
     (
       unset -f conda >& /dev/null
       unset -f mamba >& /dev/null
-      eval "$("$FW_PATH/bin/conda" shell.bash hook)"
-      source "$FW_PATH/etc/profile.d/mamba.sh"
+      if [ -e "$FW_PATH/bin/conda" ]; then
+        eval "$("$FW_PATH/bin/conda" shell.bash hook)"
+      fi
+      if [ -e "$FW_PATH/etc/profile.d/mamba.sh" ]; then    
+        source "$FW_PATH/etc/profile.d/mamba.sh"
+      fi
       "$BINNAME" "$@"
     )
     return
