@@ -16,7 +16,7 @@ A saner handling of Anaconda environments with the conda command.
  3. Open a new terminal window or log out and log in again.
 
 After this, you can use the `conda` command more or less as usual. However, your Anaconda installation does not
-affect anything in your system before you do a 'conda activate <environment>' (or 'conda activate' for the bundled default
+affect anything in your system before you do a 'conda activate \<environment\>' (or 'conda activate' for the bundled default
 conda environment in the version of Anaconda you installed). Hence, before that, your Python version remains
 your system Python, no Anaconda python libraries are intermixed with your system python libraries etc. After issuing `conda activate <environment>`,
 you have access to your conda environment as usual. When you do `conda deactive`, you return to an environment that is not affected by your Anaconda installation.
