@@ -8,7 +8,7 @@ A wrapper-script for the Anaconda "conda" command (and "mamba") for a saner hand
 2. Edit your `.bashrc` to contain the following:
    ```  
      export ANACONDA_PATH=/opt/anaconda3
-     function conda() { source ~/Scripts/conda.source "$@" }
+     function conda() { source ~/Scripts/conda.source "$@"; }
    ```
    where you replace `/opt/anaconda3` with the path where you have installed Anaconda, and 
    `~/Scripts/conda.source` with the path to the `conda.source` script in this repository.
